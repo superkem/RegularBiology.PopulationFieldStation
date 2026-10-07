@@ -1,0 +1,707 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>[hidden]{display:none!important}</style></head><body><title>Population Field Station</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=Source+Sans+3:wght@400;600;700&display=swap">
+<style>
+/* Layout: a field-station workbench. Sticky tab bar, one working panel at a time; lab = controls beside a live chart. */
+:root{
+  --bg:#EDF1EC; --surface:#F8FAF6; --ink:#15241D; --muted:#55665D; --line:#CBD6CC;
+  --accent:#1E6B52; --accent-ink:#FFFFFF; --j:#C0481E; --s:#2A5FA8; --good:#1E7F4F; --bad:#B3261E; --warn:#8F5A00;
+  --dd:#D2561A; --di:#2A6FDB; --both:#7A4FC4; --r:#9A6200; --K:#0E7C80; --prey:#2E8B3E; --pred:#C62E3A; --dis:#B03A8F; --on:#FFFFFF;
+  --f-display:'Bricolage Grotesque','Segoe UI',system-ui,sans-serif;
+  --f-body:'Source Sans 3','Segoe UI',system-ui,sans-serif;
+  --f-mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0F1A15; --surface:#16251E; --ink:#E6EFE8; --muted:#9DB0A5; --line:#2B4035;
+  --accent:#5CC7A0; --accent-ink:#0B1712; --j:#F08A5D; --s:#7FAEF0; --good:#5CC78A; --bad:#FF8A80; --warn:#E5B04A; --dd:#FF9A66; --di:#7FB0FF; --both:#B79BFF; --r:#F2C14E; --K:#4FD1C5; --prey:#6FD07F; --pred:#FF7A85; --dis:#F07CCB; --on:#0B1712; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F1A15; --surface:#16251E; --ink:#E6EFE8; --muted:#9DB0A5; --line:#2B4035;
+  --accent:#5CC7A0; --accent-ink:#0B1712; --j:#F08A5D; --s:#7FAEF0; --good:#5CC78A; --bad:#FF8A80; --warn:#E5B04A; --dd:#FF9A66; --di:#7FB0FF; --both:#B79BFF; --r:#F2C14E; --K:#4FD1C5; --prey:#6FD07F; --pred:#FF7A85; --dis:#F07CCB; --on:#0B1712; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 var(--f-body);padding-inline:16px;padding-block:0 48px}
+.wrap{max-width:1080px;margin-inline:auto}
+header.top{padding-block:20px 8px;display:flex;flex-wrap:wrap;gap:8px 24px;align-items:end;justify-content:space-between}
+h1{font:700 clamp(26px,4.5vw,38px)/1.05 var(--f-display);margin:0;letter-spacing:-.01em;text-wrap:balance}
+.kicker{font:500 12px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+.sub{color:var(--muted);margin:0;max-width:46ch}
+nav.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);display:flex;gap:4px;overflow-x:auto;padding-block:8px;border-bottom:1px solid var(--line);margin-bottom:20px}
+nav.tabs button{flex:none;font:600 14px var(--f-body);padding:9px 14px;border:1px solid transparent;border-radius:6px;background:none;color:var(--muted);cursor:pointer}
+nav.tabs button[aria-selected="true"]{background:var(--ink);color:var(--bg)}
+nav.tabs button:hover{color:var(--ink)} nav.tabs button[aria-selected="true"]:hover{color:var(--bg)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+section.panel[hidden]{display:none}
+h2{font:700 24px/1.15 var(--f-display);margin:0 0 4px;text-wrap:balance}
+h3{font:700 16px var(--f-display);margin:0 0 8px}
+.lead{color:var(--muted);margin:0 0 16px;max-width:70ch}
+.slidetag{font:500 11px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 4px}
+.btn{font:600 15px var(--f-body);padding:10px 16px;border-radius:6px;border:1px solid var(--ink);background:var(--surface);color:var(--ink);cursor:pointer}
+.btn:hover{background:var(--line)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn:disabled{opacity:.45;cursor:default}
+.row{display:flex;flex-wrap:wrap;gap:8px}
+.box{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px}
+.lab{display:grid;grid-template-columns:minmax(260px,330px) minmax(0,1fr);gap:20px;align-items:start}
+@media(max-width:820px){.lab{grid-template-columns:minmax(0,1fr)}}
+.ctrl{display:flex;flex-direction:column;gap:14px}
+.sl{display:grid;grid-template-columns:1fr auto;gap:2px 8px;font-size:14px}
+.sl label{font-weight:600} .sl output{font:500 13px var(--f-mono);color:var(--accent)}
+.sl input[type=range]{grid-column:1/-1;width:100%;accent-color:var(--accent)}
+.sl .hint{grid-column:1/-1;color:var(--muted);font-size:12.5px}
+fieldset{border:1px solid var(--line);border-radius:8px;padding:12px;margin:0;display:flex;flex-direction:column;gap:12px;min-width:0}
+legend{font:500 11px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding-inline:6px}
+.tog{display:flex;gap:8px;align-items:center;font-weight:600;font-size:14px}
+.tog input{accent-color:var(--accent);width:18px;height:18px}
+.chip{display:inline-block;font:500 11px var(--f-mono);letter-spacing:.04em;padding:2px 7px;border-radius:4px;border:1px solid var(--line);color:var(--muted);vertical-align:middle}
+.chip.dd{color:var(--j);border-color:var(--j)} .chip.di{color:var(--s);border-color:var(--s)}
+canvas{display:block;width:100%;height:340px;background:var(--surface);border:1px solid var(--line);border-radius:8px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-block:12px}
+.stat{border-left:3px solid var(--line);padding-left:10px}
+.stat b{display:block;font:500 20px var(--f-mono);font-variant-numeric:tabular-nums}
+.stat span{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.verdict{font-weight:600;padding:10px 12px;border-radius:6px;background:var(--surface);border:1px solid var(--line);min-height:44px}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin-top:8px}
+.legend i{display:inline-block;width:18px;height:3px;vertical-align:middle;margin-right:6px}
+.missions{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.missions li{display:flex;gap:10px;font-size:14px;align-items:flex-start}
+.missions li::before{content:"";flex:none;width:18px;height:18px;border:2px solid var(--line);border-radius:50%;margin-top:2px}
+.missions li.done::before{background:var(--good);border-color:var(--good);box-shadow:inset 0 0 0 3px var(--surface)}
+.missions li.done{color:var(--muted)}
+.missions li.sec{font:500 11px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:6px}.missions li.sec::before{display:none}
+.missions .mrow{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:4px}
+.btn.mini{font-size:13px;padding:4px 12px;border-color:var(--di);color:var(--di);background:var(--surface)}
+.mres{font-size:13.5px;margin-top:4px}.mres:empty{display:none}.mres[data-k="ok"]{color:var(--good);font-weight:600}.mres[data-k="no"]{color:var(--warn)}
+.missions details{font-size:13px;color:var(--muted)}.missions summary{cursor:pointer;color:var(--di);font-weight:600}
+.pick{display:flex;flex-wrap:wrap;gap:8px}
+.pick button{font:600 14px var(--f-body);padding:8px 12px;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.pick button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent);color:var(--accent-ink)}
+/* sort game */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:24px;max-width:720px}
+.card .q{font:600 clamp(19px,3vw,24px)/1.3 var(--f-display);margin:0 0 20px;text-wrap:balance}
+.meter{display:flex;gap:16px;align-items:center;font:500 13px var(--f-mono);color:var(--muted);margin-bottom:12px;flex-wrap:wrap}
+.bar{flex:1;min-width:120px;height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);width:0;transition:width .3s}
+.fb{margin-top:16px;padding:12px 14px;border-radius:6px;border:1px solid var(--line);font-size:15px}
+.fb.ok{border-color:var(--good)} .fb.no{border-color:var(--bad)}
+.fb b.ok{color:var(--good)} .fb b.no{color:var(--bad)}
+.decks{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;max-width:820px}
+.deck{text-align:left;padding:16px;border:1px solid var(--line);border-radius:8px;background:var(--surface);cursor:pointer;color:var(--ink);font-family:var(--f-body)}
+.deck:hover{border-color:var(--accent)} .deck b{display:block;font:700 17px var(--f-display);margin-bottom:4px} .deck span{color:var(--muted);font-size:14px}
+input.num{font:500 20px var(--f-mono);padding:10px 12px;width:180px;border:1px solid var(--ink);border-radius:6px;background:var(--bg);color:var(--ink)}
+.miss{margin:12px 0 0;padding-left:18px;color:var(--muted);font-size:14px}
+.case{display:grid;gap:16px;max-width:820px}
+.case .box p{margin:0 0 12px}
+.lock{opacity:.6}
+.theme{font:600 13px var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--muted);padding:6px 10px;border-radius:6px;cursor:pointer}
+
+.tint{--t:var(--c)}
+header.top{background:linear-gradient(100deg,color-mix(in srgb,var(--prey) 22%,var(--bg)),color-mix(in srgb,var(--s) 20%,var(--bg)));border-radius:0 0 14px 14px;margin-inline:-16px;padding-inline:16px;padding-block:20px 16px;position:relative;overflow:hidden}
+header.top>*{position:relative}
+.hero-svg{position:absolute!important;right:16px;top:12px;height:calc(100% - 24px);width:260px;opacity:.95;pointer-events:none}
+@media(min-width:760px){header.top{padding-right:300px}}
+@media(max-width:759px){.hero-svg{display:none}}
+nav.tabs button{--c:var(--accent)}
+nav.tabs button::before{content:"";display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--c);margin-right:7px}
+nav.tabs button[aria-selected="true"]{background:var(--c);color:var(--on)}
+nav.tabs button[aria-selected="true"]::before{background:var(--on)}
+nav.tabs button[aria-selected="true"]:hover{color:var(--on)}
+nav.tabs button.theme::before{display:none}
+section.panel{--c:var(--accent)}
+#p-lab{--c:var(--accent)} #p-isle{--c:var(--pred)} #p-sort{--c:var(--both)} #p-math{--c:var(--r)} #p-case{--c:var(--di)}
+.slidetag{color:var(--c)}
+h2::after{content:"";display:block;width:56px;height:4px;border-radius:2px;background:var(--c);margin-top:8px}
+.f-k,.f-p,.f-d,.f-x{border-left:5px solid var(--fc);padding-left:10px;border-radius:2px;background:color-mix(in srgb,var(--fc) 9%,var(--surface))}
+.f-k{--fc:var(--prey)} .f-p{--fc:var(--pred)} .f-d{--fc:var(--dis)} .f-x{--fc:var(--di);padding-block:8px}
+.f-k,.f-p,.f-d{padding-block:8px;padding-right:8px}
+.chip.dd{color:var(--dd);border-color:var(--dd);background:color-mix(in srgb,var(--dd) 12%,transparent)}
+.chip.di{color:var(--di);border-color:var(--di);background:color-mix(in srgb,var(--di) 12%,transparent)}
+.stat{border-left-color:var(--c,var(--line))}
+.stat b{color:var(--c,var(--ink))}
+.verdict{border-left:6px solid var(--line)}
+.verdict[data-s="J"]{border-left-color:var(--j);background:color-mix(in srgb,var(--j) 12%,var(--surface))}
+.verdict[data-s="S"]{border-left-color:var(--s);background:color-mix(in srgb,var(--s) 12%,var(--surface))}
+.verdict[data-s="L"]{border-left-color:var(--muted)}
+.box.k-j{border-top:4px solid var(--j)} .box.k-s{border-top:4px solid var(--s)} .box.k-g{border-top:4px solid var(--good)} .box.k-b{border-top:4px solid var(--di)} .box.k-p{border-top:4px solid var(--both)}
+.btn.k-dd,.btn.k-di,.btn.k-both,.btn.k-r,.btn.k-K,.btn.k-J,.btn.k-S{--c:var(--ink);border-color:var(--c);color:var(--ink);background:color-mix(in srgb,var(--c) 14%,var(--surface))}
+.btn.k-dd{--c:var(--dd)} .btn.k-di{--c:var(--di)} .btn.k-both{--c:var(--both)} .btn.k-r{--c:var(--r)} .btn.k-K{--c:var(--K)} .btn.k-J{--c:var(--j)} .btn.k-S{--c:var(--s)}
+.btn[class*="k-"]{font-weight:700}
+.btn[class*="k-"]:hover:not(:disabled){background:color-mix(in srgb,var(--c) 30%,var(--surface))}
+.btn.k-pred{border-color:var(--pred);background:color-mix(in srgb,var(--pred) 14%,var(--surface))}
+.btn.k-dis{border-color:var(--dis);background:color-mix(in srgb,var(--dis) 14%,var(--surface))}
+.btn.k-win{border-color:var(--di);background:color-mix(in srgb,var(--di) 14%,var(--surface))}
+.deck{border-top:6px solid var(--dc)}
+.deck i{display:inline-flex;align-items:center;gap:5px;font-style:normal;font:500 11px var(--f-mono);margin:8px 10px 0 0;color:var(--ink)}
+.deck i::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--ic)}
+.bar i{background:var(--c)}
+.card{border-top:5px solid var(--c)}
+.missions li::before{border-color:var(--accent)}
+.legend i{border-radius:2px}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+<header class="top">
+  <div>
+    <p class="kicker">Unit 2 · Chapter 5 · Lessons 5.1 and 5.2</p>
+    <h1>Population Field Station</h1>
+  </div>
+  <svg class="hero-svg" viewBox="0 0 340 120" aria-hidden="true"><path d="M8 108 C120 106 200 100 240 70 S300 14 332 6" fill="none" stroke="var(--j)" stroke-width="5" stroke-linecap="round"/><path d="M8 112 C60 110 90 100 130 70 S190 30 332 28" fill="none" stroke="var(--s)" stroke-width="5" stroke-linecap="round"/><line x1="8" y1="30" x2="332" y2="30" stroke="var(--K)" stroke-width="2.5" stroke-dasharray="7 5"/><circle cx="332" cy="6" r="6" fill="var(--j)"/><circle cx="332" cy="28" r="6" fill="var(--s)"/></svg>
+  <p class="sub">A virtual lab and quick games on how populations grow and what limits them. Start in the lab.</p>
+</header>
+<nav class="tabs" role="tablist" aria-label="Activities">
+  <button role="tab" aria-selected="true" data-tab="lab" style="--c:var(--accent)">Virtual Lab</button>
+  <button role="tab" aria-selected="false" data-tab="isle" style="--c:var(--pred)">Isle Royale</button>
+  <button role="tab" aria-selected="false" data-tab="sort" style="--c:var(--both)">Sort Blitz</button>
+  <button role="tab" aria-selected="false" data-tab="math" style="--c:var(--r)">Math Dash</button>
+  <button role="tab" aria-selected="false" data-tab="case" style="--c:var(--di)">Case File</button>
+  <button class="theme" id="themeBtn" style="margin-left:auto" aria-label="Switch light or dark theme">Theme</button>
+</nav>
+
+<!-- ============ LAB ============ -->
+<section class="panel" id="p-lab">
+  <p class="slidetag">Slides 5.1: 10–16 · 5.2: 3–12</p>
+  <h2>Virtual population lab</h2>
+  <p class="lead">Set the four forces that change a population, then switch limiting factors on and off. Predict the shape of the curve before you press Run.</p>
+  <div class="lab">
+    <div class="ctrl">
+      <div class="box k-g">
+        <h3>Start from a scenario</h3>
+        <div class="pick" id="presets"></div>
+        <p id="presetNote" style="font-size:14px;color:var(--muted);margin:10px 0 0"></p>
+      </div>
+      <fieldset><legend>Four forces</legend><div id="sl-forces" style="display:contents"></div></fieldset>
+      <fieldset><legend>Limiting factors</legend>
+        <div class="f-k">
+          <label class="tog"><input type="checkbox" id="kOn"> Food and space run out <span class="chip dd">density-dependent</span></label>
+          <div class="sl" id="sl-k"></div>
+        </div>
+        <div class="f-p">
+          <label class="tog"><input type="checkbox" id="prOn"> Predators <span class="chip dd">density-dependent</span></label>
+          <div class="sl" id="sl-pr"></div>
+        </div>
+        <div class="f-d">
+          <label class="tog"><input type="checkbox" id="diOn"> Parasites and disease <span class="chip dd">density-dependent</span></label>
+          <div class="sl" id="sl-di"></div>
+        </div>
+        <div class="f-x">
+          <button class="btn k-win" id="drought" style="width:100%">Send a drought now (−40%) <span class="chip di">density-independent</span></button>
+        </div>
+      </fieldset>
+    </div>
+    <div style="min-width:0">
+      <div class="box k-p" id="predictBox" style="margin-bottom:12px">
+        <h3>Predict first</h3>
+        <p style="margin:0 0 8px;font-size:14px;color:var(--muted)">With these settings, what will the curve look like by the end?</p>
+        <div class="pick" id="predictPick">
+          <button data-p="J" aria-pressed="false">Keeps speeding up (J-curve)</button>
+          <button data-p="S" aria-pressed="false">Speeds up, then levels off (S-curve)</button>
+          <button data-p="L" aria-pressed="false">Stays low or shrinks</button>
+        </div>
+      </div>
+      <canvas id="labChart" role="img" aria-label="Population size over time"></canvas>
+      <div class="legend"><span><i style="background:var(--j)"></i>Population</span><span><i style="background:var(--K);height:0;border-top:3px dashed var(--K)"></i>Carrying capacity (when on)</span><span><i style="background:var(--warn);width:2px;height:12px"></i>Drought</span></div>
+      <div class="stats">
+        <div class="stat" style="--c:var(--ink)"><b id="sT">0</b><span id="sTl">Year</span></div>
+        <div class="stat" style="--c:var(--j)"><b id="sN">24</b><span>Population</span></div>
+        <div class="stat" style="--c:var(--good)"><b id="sB">0</b><span>Added per year</span></div>
+        <div class="stat" style="--c:var(--bad)"><b id="sD">0</b><span>Removed per year</span></div>
+        <div class="stat" style="--c:var(--accent)"><b id="sR">0%</b><span>Growth rate</span></div>
+        <div class="stat" style="--c:var(--r)"><b id="sDt">–</b><span>Doubling time</span></div>
+      </div>
+      <div class="row" style="margin-bottom:12px">
+        <button class="btn primary" id="run">Run</button>
+        <button class="btn" id="reset">Reset</button>
+        <label class="row" style="align-items:center;font-size:14px;gap:6px">Speed
+          <select id="speed"><option value="1.5">Slow</option><option value="4" selected>Normal</option><option value="12">Fast</option></select></label>
+        <label class="row" style="align-items:center;font-size:14px;gap:6px">Length
+          <select id="hz"><option>10</option><option>20</option><option selected>40</option><option>60</option><option>100</option></select></label>
+      </div>
+      <div class="verdict" id="verdict" data-s="" aria-live="polite">Press Run to start the clock.</div>
+      <div class="box k-b" style="margin-top:16px">
+        <h3>Lab missions <span class="chip" id="mCount"></span></h3>
+        <ul class="missions" id="missions"></ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ISLE ROYALE ============ -->
+<section class="panel" id="p-isle" hidden>
+  <p class="slidetag">Slides 5.2: 4–7, 12, 16</p>
+  <h2>Isle Royale predator–prey simulator</h2>
+  <p class="lead">Wolves eat moose. Moose eat balsam fir. Press the event buttons and watch how each population answers. The model is simplified, so peaks will not match the real 60-year record exactly.</p>
+  <div style="display:grid;gap:12px;max-width:900px">
+    <div class="row" style="align-items:center"><span style="font-weight:600;font-size:14px">Species pair</span>
+      <div class="pick" id="pairPick"><button data-pair="0" aria-pressed="true">Wolves and moose</button><button data-pair="1" aria-pressed="false">Arctic foxes and lemmings</button></div></div>
+    <canvas id="isleChart" role="img" aria-label="Predator and prey populations over time"></canvas>
+    <div class="legend"><span><i style="background:var(--prey)"></i><span id="lgPrey">Moose (left axis)</span></span><span><i style="background:var(--pred)"></i><span id="lgPred">Wolves (right axis)</span></span><span><i style="background:var(--warn);width:2px;height:12px"></i>Event</span></div>
+    <div class="row">
+      <button class="btn primary" id="iRun">Run</button>
+      <button class="btn k-pred" id="iAdd">Add 10 predators</button>
+      <button class="btn k-dis" id="iVirus">Disease hits predators <span class="chip dd">density-dependent</span></button>
+      <button class="btn k-win" id="iWinter">Harsh winter hits prey <span class="chip di">density-independent</span></button>
+      <button class="btn" id="iReset">Reset</button>
+    </div>
+    <div class="verdict" id="iVerdict" aria-live="polite">Press Run, then try an event after the first cycle shows up.</div>
+    <div class="box">
+      <h3>Isle Royale missions <span class="chip" id="iCount" style="margin-left:6px">0 of 5</span></h3>
+      <ul class="missions" id="imissions"></ul>
+    </div>
+    <div class="box k-g">
+      <h3>Read the cycle</h3>
+      <div class="pick" id="isleQ"></div>
+      <p id="isleA" style="margin:12px 0 0"></p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SORT BLITZ ============ -->
+<section class="panel" id="p-sort" hidden>
+  <p class="slidetag">Slides 5.1: 11–17 · 5.2: 4–14</p>
+  <h2>Sort Blitz</h2>
+  <p class="lead">Twelve cards per round. Pick the best category and read the reason that appears. Streaks build your score.</p>
+  <div id="sortStart" class="decks"></div>
+  <div id="sortPlay" hidden></div>
+</section>
+
+<!-- ============ MATH DASH ============ -->
+<section class="panel" id="p-math" hidden>
+  <p class="slidetag">Slides 5.1: 5, 7, 10, 11, 19</p>
+  <h2>Math Dash</h2>
+  <p class="lead">Eight questions on density, doubling, growth and net change. Every round is new. Type a whole number and press Enter.</p>
+  <div id="mathBox"></div>
+</section>
+
+<!-- ============ CASE FILE ============ -->
+<section class="panel" id="p-case" hidden>
+  <p class="slidetag">Slides 5.1: 2, 20 · 5.2: 19</p>
+  <h2>Case file: A plague of rabbits</h2>
+  <p class="lead">In 1859, 24 rabbits were released in Australia. Collect the clues, then check your answers.</p>
+  <div class="case">
+    <div class="box k-j">
+      <h3>Clue 1: The shape of the first years</h3>
+      <p>Australia had almost no predators, parasites or diseases for rabbits. What kind of curve did the population make at first?</p>
+      <div class="pick" id="c1a"><button data-v="J" aria-pressed="false">J-curve</button><button data-v="S" aria-pressed="false">S-curve</button></div>
+      <p style="margin:12px 0 8px">Which reason fits best?</p>
+      <div class="pick" id="c1b">
+        <button data-v="a" aria-pressed="false">Rabbits are r-strategists with many offspring, and nothing was checking them.</button>
+        <button data-v="b" aria-pressed="false">Rabbits are K-strategists, so they track carrying capacity closely.</button>
+        <button data-v="c" aria-pressed="false">Droughts killed the same share of rabbits every year.</button>
+      </div>
+      <div class="row" style="margin-top:12px"><button class="btn primary" id="c1check">Check clue 1</button></div>
+      <div class="fb" id="c1fb" hidden></div>
+    </div>
+    <div class="box k-b">
+      <h3>Clue 2: England and Australia</h3>
+      <p>Rabbits in England never exploded the way they did in Australia. Select every factor that was present for English rabbits but missing in Australia.</p>
+      <div class="pick" id="c2">
+        <button data-v="pred" aria-pressed="false">Foxes and weasels that hunt rabbits</button>
+        <button data-v="dis" aria-pressed="false">Natural parasites and diseases</button>
+        <button data-v="food" aria-pressed="false">Unlimited unclaimed food and space</button>
+        <button data-v="hur" aria-pressed="false">Frequent hurricanes</button>
+      </div>
+      <div class="row" style="margin-top:12px"><button class="btn primary" id="c2check">Check clue 2</button></div>
+      <div class="fb" id="c2fb" hidden></div>
+    </div>
+    <div class="box lock" id="c3"><h3>Clue 3: Locked</h3><p style="margin:0">Unlocks in Lesson 5.3, Human Population Growth. Australians eventually released a disease on purpose. Which type of limiting factor is that?</p></div>
+    <div class="box k-g">
+      <h3>Exit ticket</h3>
+      <p style="margin:0 0 8px">Explain why exponential growth cannot continue forever, and why a rabbit population escapes its limits faster than an elephant population would.</p>
+      <textarea id="exit" rows="4" style="width:100%;font:16px var(--f-body);padding:10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)" placeholder="Write your answer here. It is not saved or sent anywhere."></textarea>
+    </div>
+  </div>
+</section>
+</div>
+
+<script>
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const cssv=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const pickOne=a=>a[Math.floor(Math.random()*a.length)];
+const shuffle=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+function fmt(n){n=Math.round(n);if(Math.abs(n)>=1e6)return (n/1e6).toFixed(n>=1e7?0:1)+'M';return n.toLocaleString('en-US')}
+function niceMax(v){if(!(v>0))return 1;const p=Math.pow(10,Math.floor(Math.log10(v))),f=v/p;return (f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10)*p}
+const axisFmt=n=>{const r=v=>String(Math.round(v*10)/10);return n>=1e6?r(n/1e6)+'M':n>=1e3?r(n/1e3)+'k':r(n)};
+
+/* ---------- chart ---------- */
+function drawChart(cv,o){
+  const dpr=window.devicePixelRatio||1,w=cv.clientWidth,h=cv.clientHeight;if(!w||!h)return;
+  cv.width=w*dpr;cv.height=h*dpr;const c=cv.getContext('2d');c.setTransform(dpr,0,0,dpr,0,0);
+  const ink=cssv('--ink'),muted=cssv('--muted'),line=cssv('--line');
+  const hasR=o.series.some(s=>s.axis==='r');
+  const D=(()=>{const f=o.ymaxL/Math.pow(10,Math.floor(Math.log10(o.ymaxL)));return (Math.abs(f-2.5)<1e-9||Math.abs(f-5)<1e-9)?5:4})();
+  const m={l:56,r:hasR?52:14,t:14,b:44},pw=w-m.l-m.r,ph=h-m.t-m.b;
+  const X=x=>m.l+x/o.xmax*pw,YL=y=>m.t+ph-y/o.ymaxL*ph,YR=y=>m.t+ph-y/o.ymaxR*ph;
+  c.font='12px '+cssv('--f-mono');c.lineWidth=1;
+  for(let i=0;i<=D;i++){
+    const y=m.t+ph*i/D;c.strokeStyle=line;c.beginPath();c.moveTo(m.l,y);c.lineTo(m.l+pw,y);c.stroke();
+    c.fillStyle=muted;c.textAlign='right';c.textBaseline='middle';
+    c.fillText(axisFmt(o.ymaxL*(D-i)/D),m.l-6,y);
+    if(hasR){c.textAlign='left';c.fillText(axisFmt(o.ymaxR*(D-i)/D),m.l+pw+6,y)}
+  }
+  c.textAlign='center';c.textBaseline='top';
+  const xt=Math.min(10,o.xmax);for(let i=0;i<=xt;i++){const xv=o.xmax*i/xt;c.fillStyle=muted;c.fillText(String(Math.round(xv*10)/10),X(xv),m.t+ph+6)}
+  c.fillStyle=ink;c.fillText(o.xlabel,m.l+pw/2,m.t+ph+26);
+  c.save();c.translate(12,m.t+ph/2);c.rotate(-Math.PI/2);c.textBaseline='middle';c.fillText(o.ylabelL,0,0);c.restore();
+  if(hasR){c.save();c.translate(w-8,m.t+ph/2);c.rotate(Math.PI/2);c.textBaseline='middle';c.fillText(o.ylabelR,0,0);c.restore()}
+  c.strokeStyle=ink;c.beginPath();c.moveTo(m.l,m.t);c.lineTo(m.l,m.t+ph+0);c.lineTo(m.l+pw,m.t+ph);c.stroke();
+  if(o.hline&&o.hline.y<=o.ymaxL){c.strokeStyle=cssv('--K');c.setLineDash([6,4]);c.lineWidth=2.5;c.beginPath();c.moveTo(m.l,YL(o.hline.y));c.lineTo(m.l+pw,YL(o.hline.y));c.stroke();c.setLineDash([]);
+    c.fillStyle=cssv('--K');c.textAlign='left';c.textBaseline='bottom';c.fillText(o.hline.label,m.l+6,YL(o.hline.y)-3)}
+  (o.vlines||[]).forEach(v=>{if(v.x>o.xmax)return;c.strokeStyle=cssv('--warn');c.lineWidth=2;c.beginPath();c.moveTo(X(v.x),m.t);c.lineTo(X(v.x),m.t+ph);c.stroke()});
+  c.save();c.beginPath();c.rect(m.l,m.t-2,pw,ph+4);c.clip();
+  o.series.forEach((s,k)=>{
+    const Y=s.axis==='r'?YR:YL;if(!s.x.length)return;
+    if(s.fill){c.globalAlpha=.14;c.fillStyle=s.color;c.beginPath();c.moveTo(X(s.x[0]),m.t+ph);s.x.forEach((x,i)=>c.lineTo(X(x),Y(s.y[i])));c.lineTo(X(s.x[s.x.length-1]),m.t+ph);c.fill();c.globalAlpha=1}
+    c.strokeStyle=s.color;c.lineWidth=2.5;c.lineJoin='round';c.beginPath();s.x.forEach((x,i)=>{i?c.lineTo(X(x),Y(s.y[i])):c.moveTo(X(x),Y(s.y[i]))});c.stroke();
+    const lx=s.x[s.x.length-1],ly=s.y[s.y.length-1];c.fillStyle=s.color;c.beginPath();c.arc(X(lx),Y(ly),4,0,7);c.fill();
+  });
+  c.restore();
+}
+
+/* ---------- tabs and theme ---------- */
+const redraws={};
+function show(tab){
+  $$('nav.tabs [data-tab]').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===tab));
+  $$('section.panel').forEach(p=>p.hidden=p.id!=='p-'+tab);
+  if(redraws[tab])redraws[tab]();
+}
+$$('nav.tabs [data-tab]').forEach(b=>b.onclick=()=>show(b.dataset.tab));
+$('#themeBtn').onclick=()=>{const d=document.documentElement,cur=d.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');d.setAttribute('data-theme',cur==='dark'?'light':'dark');redrawAll()};
+function redrawAll(){const t=$('nav.tabs [aria-selected="true"]').dataset.tab;if(redraws[t])redraws[t]()}
+addEventListener('resize',redrawAll);
+matchMedia('(prefers-color-scheme:dark)').addEventListener?.('change',redrawAll);
+
+/* ---------- LAB ---------- */
+function sliderHTML(id,label,min,max,step,val,hint){return `<label for="${id}">${label}</label><output id="${id}_o"></output><input type="range" id="${id}" min="${min}" max="${max}" step="${step}" value="${val}">${hint?`<span class="hint">${hint}</span>`:''}`}
+$('#sl-forces').innerHTML=[
+ ['n0','Starting population',1,500,1,24,''],
+ ['b','Birthrate per individual per year',0,2.5,.05,1.8,'Births add to the population.'],
+ ['d','Death rate per individual per year',0,1.5,.05,.3,'Deaths remove from it.'],
+ ['imm','Immigration (individuals per year)',0,300,5,0,'Moving in adds.'],
+ ['emi','Emigration (individuals per year)',0,300,5,0,'Moving out removes.']
+].map(a=>`<div class="sl">${sliderHTML(...a)}</div>`).join('');
+$('#sl-k').innerHTML=sliderHTML('kv','Carrying capacity',100,5000,50,1000,'');
+$('#sl-pr').innerHTML=sliderHTML('prv','Predation strength',0,2,.1,1,'');
+$('#sl-di').innerHTML=sliderHTML('div','Disease strength',0,1.5,.1,.6,'');
+const g=id=>$('#'+id);
+const val=id=>+g(id).value;
+function syncOut(){$$('input[type=range]',$('#p-lab')).forEach(r=>{const o=g(r.id+'_o');if(o)o.textContent=r.id==='b'||r.id==='d'||r.id==='prv'||r.id==='div'?(+r.value).toFixed(r.id==='prv'||r.id==='div'?1:2):fmt(+r.value)})}
+const PRESETS=[
+ {n:'Australia 1859',note:'24 rabbits, no predators, no disease, endless grass. This is the J-curve from the chapter mystery.',v:{n0:24,b:1.8,d:.3,imm:0,emi:0},f:{k:0,p:0,d:0},hz:10,unit:'Year'},
+ {n:'England',note:'Same rabbits, but foxes, weasels and disease cap them. Compare the ceiling with Australia.',v:{n0:24,b:1.8,d:.3,imm:0,emi:0,kv:2000,prv:1.2,div:.4},f:{k:1,p:1,d:1},hz:40,unit:'Year'},
+ {n:'Yeast in a jar',note:'Textbook S-curve: grape juice runs out near 36 hours. Time is in hours here.',v:{n0:10,b:.45,d:.05,imm:0,emi:0,kv:1000},f:{k:1,p:0,d:0},hz:40,unit:'Hour'},
+ {n:'Elephants',note:'Low birthrate and slow growth. A K-strategist reaches carrying capacity gradually.',v:{n0:20,b:.15,d:.05,imm:0,emi:0,kv:500},f:{k:1,p:0,d:0},hz:100,unit:'Year'},
+ {n:'Sandbox',note:'Your turn. Change anything.',v:{n0:50,b:1,d:.3,imm:0,emi:0,kv:1000,prv:1,div:.6},f:{k:0,p:0,d:0},hz:40,unit:'Year'}
+];
+$('#presets').innerHTML=PRESETS.map((p,i)=>`<button data-i="${i}" aria-pressed="false">${p.n}</button>`).join('');
+let L,unit='Year';
+function resetLab(){L={t:0,N:val('n0'),x:[0],y:[val('n0')],run:false,ev:[],peak:val('n0'),maxRate:0,hold:0,pred:L&&L.pred||null,cooldown:0,done:false,lastRate:0,dryHi:false,dryLo:false,started:false,steady:0,armed:false,reach:null};
+  g('run').textContent='Run';g('verdict').textContent='Press Run to start the clock.';g('verdict').dataset.s='';updateStats();drawLab();renderMissions()}
+function applyPreset(i){
+  const p=PRESETS[i];$$('#presets button').forEach((b,j)=>b.setAttribute('aria-pressed',j===i));
+  Object.entries(p.v).forEach(([k,x])=>g(k).value=x);
+  g('kOn').checked=!!p.f.k;g('prOn').checked=!!p.f.p;g('diOn').checked=!!p.f.d;
+  g('hz').value=p.hz;unit=p.unit;g('sTl').textContent=unit;g('presetNote').textContent=p.note;
+  syncOut();if(L)L.pred=null;$$('#predictPick button').forEach(b=>b.setAttribute('aria-pressed',false));resetLab();
+}
+$$('#presets button').forEach(b=>b.onclick=()=>applyPreset(+b.dataset.i));
+function rates(N){
+  const K=g('kOn').checked,Kv=val('kv'),b=val('b'),d=val('d'),r0=b-d;
+  const dd=(g('prOn').checked?val('prv')*N/(N+300):0)+(g('diOn').checked?val('div')*N/(N+1500):0);
+  const internal=(K&&r0>0)?r0*N*(1-N/Kv):r0*N;
+  const I=val('imm'),E=Math.min(val('emi'),N);
+  const net=internal-dd*N+I-E;
+  const B=Math.max(0,internal+d*N)+I;
+  return {B:B,D:B-net,net:net};
+}
+function stepLab(dt){
+  const h=.025;let left=dt;
+  while(left>1e-9){const s=Math.min(h,left);L.N=Math.max(0,Math.min(1e9,L.N+rates(L.N).net*s));L.t+=s;left-=s}
+  L.x.push(L.t);L.y.push(L.N);L.peak=Math.max(L.peak,L.N);
+  const r=rates(L.N),rate=L.N>0?r.net/L.N:0;L.lastRate=rate;L.maxRate=Math.max(L.maxRate,rate);
+  if(g('kOn').checked&&Math.abs(L.N-val('kv'))<=.1*val('kv'))L.hold+=dt;else L.hold=0;
+  if(Math.abs(rate)<.01&&L.N>=1)L.steady+=dt;else L.steady=0;
+  if(L.reach===null&&g('kOn').checked&&L.N>=.9*val('kv'))L.reach=L.t;
+  checkMissions();
+}
+function shapeNow(){
+  if(L.N<=L.y[0]*1.2&&L.peak<=L.y[0]*1.5)return 'L';
+  if(L.lastRate>.05&&L.lastRate>=.7*L.maxRate)return 'J';
+  return 'S';
+}
+const SHAPE={J:'J-curve: growth keeps accelerating',S:'S-curve: growth slowed and levelled off',L:'Stays low or shrinks'};
+function updateStats(){
+  const r=rates(L.N),rate=L.N>0?r.net/L.N:0;
+  g('sT').textContent=(Math.round(L.t*10)/10).toString();g('sN').textContent=fmt(L.N);g('sB').textContent=fmt(r.B);g('sD').textContent=fmt(r.D);
+  g('sR').textContent=(rate*100).toFixed(0)+'%';
+  g('sDt').textContent=rate>.001?(Math.log(2)/Math.log(1+rate)).toFixed(1)+' '+(unit==='Hour'?'hr':'yr'):'–';
+}
+function drawLab(){
+  const K=g('kOn').checked,kv=val('kv'),hz=val('hz');
+  let ymax=L.peak*1.1;if(K)ymax=Math.max(ymax,kv*1.2);
+  drawChart(g('labChart'),{series:[{x:L.x,y:L.y,color:cssv('--j'),fill:true}],xmax:hz,ymaxL:niceMax(ymax),hline:K?{y:kv,label:'carrying capacity'}:null,vlines:L.ev.map(x=>({x})),xlabel:unit+'s',ylabelL:'Population'});
+}
+redraws.lab=()=>{drawLab()};
+let last=0;
+function loop(ts){
+  if(L&&L.run){const el=Math.min(.1,(ts-last)/1000);const dt=Math.min(.5,el*val('speed'));
+    if(dt>0){const hz=val('hz');const step=Math.min(dt,hz-L.t);stepLab(step);updateStats();drawLab();
+      const sh=shapeNow();if(L.t>2){g('verdict').textContent='Now: '+SHAPE[sh]+'.';g('verdict').dataset.s=sh}
+      if(L.t>=hz-1e-6)finishLab()}}
+  if(I&&I.run){const el=Math.min(.1,(ts-last)/1000);if(el>0)stepIsle(Math.min(.5,el*8))}
+  last=ts;requestAnimationFrame(loop);
+}
+function finishLab(){
+  L.run=false;L.done=true;g('run').textContent='Run again';const sh=shapeNow();let m='Finished: '+SHAPE[sh]+'.';
+  if(L.pred)m+=L.pred===sh?' Your prediction was right.':' You predicted "'+SHAPE[L.pred].split(':')[0]+'". Compare the curve and try changing a limiting factor.';
+  g('verdict').textContent=m;g('verdict').dataset.s=sh;
+}
+g('run').onclick=()=>{
+  if(L.done){resetLab()}
+  L.run=!L.run;g('run').textContent=L.run?'Pause':'Run';L.started=true;
+  if(L.run&&L.t<=.001)g('verdict').textContent='Running…';
+};
+g('reset').onclick=()=>resetLab();
+g('drought').onclick=()=>{
+  if(!L.started)return;
+  if(L.N>500)L.dryHi=true;if(L.N<100)L.dryLo=true;
+  if(g('kOn').checked&&L.N>=.9*val('kv'))L.armed=true;
+  L.N*=.6;L.ev.push(L.t);L.x.push(L.t);L.y.push(L.N);updateStats();drawLab();
+  g('verdict').textContent='Drought: 40% died, whatever the density. Compare that with predators and disease, which hit harder when crowded.';
+  checkMissions();
+};
+$$('#predictPick button').forEach(b=>b.onclick=()=>{L.pred=b.dataset.p;$$('#predictPick button').forEach(x=>x.setAttribute('aria-pressed',x===b))});
+['n0'].forEach(id=>g(id).addEventListener('input',()=>{syncOut();resetLab()}));
+$$('#p-lab input').forEach(i=>i.addEventListener('input',()=>{syncOut();if(!L.run)drawLab();updateStats()}));
+g('hz').onchange=()=>drawLab();
+const noF=()=>!g('kOn').checked&&!g('prOn').checked&&!g('diOn').checked;
+const dtime=()=>{const r=L.lastRate;return r>0?Math.log(2)/Math.log(1+r):99};
+const pct=x=>Math.round(x*100)+'%';
+const MIS=[
+ {t:'Build a J-curve: with every limiting factor off, grow the population past 10,000.',h:'Load the Australia 1859 scenario and press Run.',
+  ok:()=>noF()&&L.N>=10000,
+  chk:()=>!noF()?'Switch off carrying capacity, predators and disease first.':'Population is '+fmt(L.N)+'. Press Run and let it pass 10,000.'},
+ {t:'Find the ceiling: turn on carrying capacity and keep the population within 10% of it for 5 time units.',h:'Load Yeast in a jar and let it run to the end.',
+  ok:()=>L.hold>=5,
+  chk:()=>!g('kOn').checked?'Turn on "Food and space run out" first.':'Within 10% of capacity for '+L.hold.toFixed(1)+' of 5 time units. Population is '+pct(L.N/val('kv'))+' of capacity. Keep running.'},
+ {t:'Test density-independence: send a drought once when the population is above 500 and once when it is below 100. Same 40% loss both times.',h:'Load England. Send one drought early, while the population is small, and another once it has levelled off above 500.',
+  ok:()=>L.dryHi&&L.dryLo,
+  chk:()=>'Drought above 500: '+(L.dryHi?'done':'not yet')+'. Drought below 100: '+(L.dryLo?'done':'not yet')+'. Press Run first, then use the drought button.'},
+ {t:'Rescue the paddock: after the population passes 2,000, use predators or disease to push it below half its peak.',h:'Start from Australia 1859 with Length 20. When the population passes 2,000, switch on predators and disease and raise both strengths.',
+  ok:()=>L.peak>2000&&L.N<.5*L.peak&&(g('prOn').checked||g('diOn').checked),
+  chk:()=>L.peak<=2000?'Peak so far is '+fmt(L.peak)+'. Let the population pass 2,000 first.':!(g('prOn').checked||g('diOn').checked)?'Switch on predators or parasites and disease.':'Population is '+pct(L.N/L.peak)+' of its peak. It must fall below 50%. Raise the strength sliders and keep running.'},
+ {t:'Two-year doubler: adjust the sliders so the doubling time reads 2 years (between 1.7 and 2.3) while the population is growing.',h:'Growth rate is births minus deaths. A doubling time of 2 years needs about 41% growth per year.',
+  ok:()=>L.t>=1&&L.N>=2&&Math.abs(dtime()-2)<=.3,
+  chk:()=>L.lastRate<=0?'The population is not growing. Birthrate must be higher than the death rate.':L.t<1?'Run for at least one time unit first.':'Doubling time reads '+dtime().toFixed(1)+'. '+(dtime()>2.3?'Too slow: raise births or lower deaths.':'Too fast: lower births or raise deaths.')},
+ {t:'Slow and steady: with carrying capacity on and a birthrate of 0.2 or less, make the population take at least 40 years to reach 90% of capacity.',h:'Load Elephants, set Length to 100 and press Run. Low births mean slow growth, like a K-strategist.',
+  ok:()=>g('kOn').checked&&val('b')<=.2&&L.reach!==null&&L.reach>=40,
+  chk:()=>!g('kOn').checked?'Turn on carrying capacity.':val('b')>.2?'Birthrate must be 0.2 or less.':L.reach===null?'Not at 90% of capacity yet (year '+L.t.toFixed(0)+'). Keep running with Length 100.':'It reached 90% at year '+L.reach.toFixed(0)+'. That is too fast. Lower the birthrate or raise the death rate.'},
+ {t:'Perfect balance: with all limiting factors off and no migration, make births equal deaths so the population stays level for 5 time units.',h:'If birthrate and death rate match, nothing is added and nothing is removed.',
+  ok:()=>noF()&&val('imm')===0&&val('emi')===0&&Math.abs(val('b')-val('d'))<.01&&L.steady>=5,
+  chk:()=>!noF()?'Switch off every limiting factor.':(val('imm')||val('emi'))?'Set immigration and emigration to 0.':Math.abs(val('b')-val('d'))>=.01?'Birthrate ('+val('b').toFixed(2)+') and death rate ('+val('d').toFixed(2)+') must be equal.':'Level for '+L.steady.toFixed(1)+' of 5 time units. Keep running.'},
+ {t:'Immigration rescue: set the death rate above the birthrate, then use immigration alone to hold the population steady for 5 time units.',h:'Immigration must equal the yearly loss: (death rate minus birthrate) times the population.',
+  ok:()=>val('d')>val('b')&&val('imm')>0&&L.steady>=5,
+  chk:()=>val('d')<=val('b')?'The death rate must be higher than the birthrate.':val('imm')<=0?'Set immigration above 0.':'Population is changing by '+fmt(rates(L.N).net)+' a year. Steady for '+L.steady.toFixed(1)+' of 5 units. Adjust immigration (or the starting population) until it is near 0.'},
+ {t:'Bounce back: with carrying capacity on, let the population reach 90% of it, send a drought, and watch it climb back to 90%.',h:'Load Yeast in a jar, wait until it levels off, then press the drought button.',
+  ok:()=>L.armed&&L.N>=.9*val('kv'),
+  chk:()=>!g('kOn').checked?'Turn on carrying capacity.':!L.armed?'Send the drought only after the population is at 90% of capacity or more. It is at '+pct(L.N/val('kv'))+'.':'Recovering: '+pct(L.N/val('kv'))+' of capacity. It needs to reach 90% again.'},
+ {t:'Rebuild England: start from Australia 1859 (carrying capacity off) and use predators and disease together to keep the population under 1,000 at year 20.',h:'Set Length to 20. Both strengths need to be high. Try predation 2.0 and disease 1.0.',
+  ok:()=>!g('kOn').checked&&g('prOn').checked&&g('diOn').checked&&L.t>=20&&L.N<1000&&L.y[0]<=50,
+  chk:()=>g('kOn').checked?'Switch carrying capacity off.':!(g('prOn').checked&&g('diOn').checked)?'Switch on both predators and parasites and disease.':L.y[0]>50?'Start with 50 individuals or fewer.':L.t<20?'Run to year 20 (now year '+L.t.toFixed(0)+').':'Population is '+fmt(L.N)+'. Raise the strengths until it stays under 1,000.'},
+ {t:'Predator ceiling: with carrying capacity on, use predators to make the population level off between 300 and 600 for 5 time units.',h:'Start with carrying capacity at 1,000 and set the predation strength to about 0.4 so the line settles well below the dashed line.',
+  ok:()=>g('kOn').checked&&g('prOn').checked&&L.N>=300&&L.N<=600&&L.steady>=5,
+  chk:()=>!g('kOn').checked||!g('prOn').checked?'Switch on both carrying capacity and predators.':L.N>600?'Population is '+fmt(L.N)+', above the 300 to 600 band. Raise the predation strength a little.':L.N<300?'Population is '+fmt(L.N)+', below the band. Lower the predation strength (try about 0.4).':'In the band. Level for '+L.steady.toFixed(1)+' of 5 time units. Keep running.'},
+ {t:'Emigration balance: with limiting factors off and births above deaths, use emigration alone to hold the population steady for 5 time units.',h:'Emigration must equal the yearly growth: (birthrate minus death rate) times the population. Try birthrate 0.3, death rate 0.2, start 100.',
+  ok:()=>noF()&&val('b')>val('d')&&val('emi')>0&&val('imm')===0&&L.steady>=5,
+  chk:()=>!noF()?'Switch off every limiting factor.':val('b')<=val('d')?'Birthrate must be higher than the death rate.':val('emi')<=0?'Set emigration above 0.':val('imm')>0?'Set immigration to 0.':'Population is changing by '+fmt(rates(L.N).net)+' a year. Steady for '+L.steady.toFixed(1)+' of 5 units. Match emigration to the yearly growth.'},
+ {t:'Three strikes: with carrying capacity on, send three droughts in one run and still finish within 10% of capacity.',h:'Use Yeast in a jar with Length 60. Space the droughts about 8 hours apart and leave time at the end to recover.',
+  ok:()=>g('kOn').checked&&L.ev.length>=3&&Math.abs(L.N-val('kv'))<=.1*val('kv'),
+  chk:()=>!g('kOn').checked?'Turn on carrying capacity.':L.ev.length<3?'Droughts sent: '+L.ev.length+' of 3.':'Population is '+pct(L.N/val('kv'))+' of capacity. It needs to be between 90% and 110%. Keep running.'}
+];
+const doneM=new Set();
+function checkMissions(){let ch=false;MIS.forEach((m,i)=>{if(!doneM.has(i)&&m.ok()){doneM.add(i);ch=true}});if(ch)renderMissions()}
+const mmsg={};
+function renderMissions(){
+  const mk=(a,b)=>MIS.slice(a,b).map((m,k)=>{const i=a+k,done=doneM.has(i);return `<li class="${done?'done':''}"><div>${m.t}<div class="mrow"><button class="btn mini" data-i="${i}">Check</button><details><summary>Hint</summary>${m.h}</details></div><div class="mres" id="mres${i}" data-k="${done?'ok':(mmsg[i]?'no':'')}" aria-live="polite">${done?'Complete.':(mmsg[i]||'')}</div></div></li>`}).join('');
+  g('missions').innerHTML='<li class="sec">Core missions</li>'+mk(0,4)+'<li class="sec">Sandbox challenges</li>'+mk(4,MIS.length);
+  g('mCount').textContent=doneM.size+' of '+MIS.length;
+  $$('#missions .btn.mini').forEach(b=>b.onclick=()=>checkMission(+b.dataset.i))}
+function checkMission(i){
+  const m=MIS[i];let ok=false;try{ok=m.ok()}catch(e){}
+  if(ok){doneM.add(i);delete mmsg[i]}else{let msg='';try{msg=m.chk()}catch(e){msg='Run the experiment first.'}mmsg[i]=msg}
+  renderMissions()}
+
+/* ---------- ISLE ROYALE ---------- */
+const PAIRS=[{prey:'Moose',pred:'Wolves',ylp:'Moose',ylr:'Wolves',m0:2000,w0:8},{prey:'Lemmings',pred:'Arctic foxes',ylp:'Lemmings',ylr:'Foxes',m0:2000,w0:8}];
+let I={pair:0,t:0,M:2000,W:8,x:[0],M_:[2000],W_:[8],ev:[],evd:[],run:false,maxM:2000,maxW:8};
+function resetIsle(){const p=PAIRS[I.pair];I={pair:I.pair,t:0,M:p.m0,W:p.w0,x:[0],M_:[p.m0],W_:[p.w0],ev:[],evd:[],run:false,maxM:p.m0,maxW:p.w0};
+  g('iRun').textContent='Run';$('#lgPrey').textContent=p.prey+' (left axis)';$('#lgPred').textContent=p.pred+' (right axis)';
+  g('iAdd').textContent='Add 10 '+p.pred.toLowerCase();$('#iVerdict').textContent='Press Run, then try an event after the first cycle shows up.';drawIsle()}
+function stepIsle(dt){
+  if(I.t>=90){I.run=false;g('iRun').textContent='Run again';return}
+  const r=.4,K=10000,a=.02,ea=1e-4,m=.15,h=.02;let left=Math.min(dt,90-I.t);
+  while(left>1e-9){const s=Math.min(h,left);const dM=r*I.M*(1-I.M/K)-a*I.M*I.W,dW=ea*I.M*I.W-m*I.W;
+    I.M=Math.max(.5,I.M+dM*s);I.W=Math.max(.5,I.W+dW*s);I.t+=s;left-=s}
+  I.x.push(I.t);I.M_.push(I.M);I.W_.push(I.W);I.maxM=Math.max(I.maxM,I.M);I.maxW=Math.max(I.maxW,I.W);drawIsle();checkIsle();
+}
+function drawIsle(){const p=PAIRS[I.pair];
+  drawChart(g('isleChart'),{series:[{x:I.x,y:I.M_,color:cssv('--prey'),fill:true},{x:I.x,y:I.W_,color:cssv('--pred'),axis:'r'}],xmax:90,ymaxL:niceMax(Math.max(I.maxM*1.1,2500)),ymaxR:niceMax(Math.max(I.maxW*1.15,40)),vlines:I.ev.map(x=>({x})),xlabel:'Years',ylabelL:p.ylp,ylabelR:p.ylr})}
+redraws.isle=()=>drawIsle();
+let pend=null;function ev0(k){pend={k:k,t:I.t,M:I.M,W:I.W,mx:I.maxM,wx:I.maxW}}
+function ev(msg){I.ev.push(I.t);I.evd.push(pend);checkIsle();g('iVerdict').textContent=msg;drawIsle()}
+g('iRun').onclick=()=>{if(I.t>=90)resetIsle();I.run=!I.run;g('iRun').textContent=I.run?'Pause':'Run'};
+g('iReset').onclick=resetIsle;
+g('iAdd').onclick=()=>{ev0('add');I.W+=10;ev('Extra predators arrive. Watch the prey fall first, then the predators follow a few years later. That lag is the signature of a predator–prey cycle.')};
+g('iVirus').onclick=()=>{ev0('virus');I.W=Math.max(1,I.W*.2);ev('Disease spreads fast through a dense predator population and cuts it by 80%. With fewer predators, the prey rebound and then crowd their own food.')};
+g('iWinter').onclick=()=>{ev0('winter');I.M*=.6;ev('A harsh winter kills 40% of the prey whatever their density. Fewer prey also means less food for the predators, so the effect carries through.')};
+$$('#pairPick button').forEach(b=>b.onclick=()=>{I.pair=+b.dataset.pair;$$('#pairPick button').forEach(x=>x.setAttribute('aria-pressed',x===b));resetIsle()});
+
+/* ---------- ISLE ROYALE MISSIONS ---------- */
+function iAfter(t){let i=0;while(i<I.x.length&&I.x[i]<t)i++;return i}
+function iPeaks(arr,win){let n=0;for(let i=0;i<arr.length;i++){const t=I.x[i];if(t<win||t+win>I.t)continue;let ok=true;for(let j=iAfter(t-win);j<arr.length&&I.x[j]<=t+win;j++)if(arr[j]>arr[i]){ok=false;break}if(ok&&arr[i]>=1.15*Math.min(...arr)){n++;while(i+1<arr.length&&I.x[i+1]<t+win)i++}}return n}
+function iArg(arr,tmax){let b=0;for(let i=0;i<arr.length&&I.x[i]<=tmax;i++)if(arr[i]>arr[b])b=i;return I.x[b]}
+const IMIS=[
+ {t:'Follow the leader: run 15 years with no events and see which line peaks first, the prey or the predators.',h:'Press Run and do not touch the event buttons. The predators need plenty of prey before their numbers can climb.',
+  ok:()=>I.ev.length===0&&I.t>=15&&iArg(I.M_,I.t)<iArg(I.W_,I.t)&&iArg(I.W_,I.t)>3,
+  chk:()=>I.ev.length?'Press Reset and run without events. Any event changes the natural cycle.':I.t<15?'Keep running. Year '+I.t.toFixed(0)+' of 15.':'Look again. The first prey peak should come before the first predator peak. Keep running a little longer so both peaks show.'},
+ {t:'Time the cycle: run the full 90 years with no events and let the chart show three predator peaks.',h:'The peaks are about 30 years apart, so you need the whole run. The 90 years pass in about a minute, so just keep it running.',
+  ok:()=>I.ev.length===0&&I.t>=89&&iPeaks(I.W_,5)>=3,
+  chk:()=>I.ev.length?'Press Reset and run without events.':I.t<89?'Keep running. Year '+I.t.toFixed(0)+' of 90.':'Only '+iPeaks(I.W_,5)+' predator peaks found. Reset and run the full 90 years.'},
+ {t:'Backfire: add 10 predators once, after year 5, and watch the prey drop below 700 within the next 10 years.',h:'Press Run, wait until about year 8 to 10, then press Add. More predators means more prey eaten, so the prey line dives.',
+  ok:()=>{const e=I.evd[0];if(!e||e.k!=='add'||e.t<5||I.t<e.t+9.9)return false;let mn=1e9;for(let i=iAfter(e.t);i<I.x.length&&I.x[i]<=e.t+10;i++)mn=Math.min(mn,I.M_[i]);return I.ev.length===1&&mn<700},
+  chk:()=>{const e=I.evd[0];return !e?'Press Run, then press the Add button after year 5.':e.k!=='add'?'The first event must be adding predators. Reset and try again.':e.t<5?'You added them too early (year '+e.t.toFixed(0)+'). Reset and wait until after year 5.':I.ev.length>1?'Use only one event. Reset and try again.':I.t<e.t+9.9?'Keep running. Give it 10 years after the event (now '+(I.t-e.t).toFixed(0)+').':'The prey did not fall below 700. Try adding the predators a little later.'}},
+ {t:'Disease to the rescue: hit the predators with disease when their line is at or near its peak, and see the prey recover to at least 1.4 times their size at the event, 10 years later.',h:'Wait until the red predator line stops rising and turns over (around year 11), then press the disease button. Fewer predators means less predation.',
+  ok:()=>{const e=I.evd.find(x=>x.k==='virus');if(!e||e.W<.9*e.wx||e.W<15||I.t<e.t+9.9)return false;const i=iAfter(e.t+10);return I.M_[Math.min(i,I.M_.length-1)]>=1.4*e.M},
+  chk:()=>{const e=I.evd.find(x=>x.k==='virus');return !e?'Press Run, then press the disease button when the predator line is at its peak.':e.W<15?'Too early: there were only '+fmt(e.W)+' predators. Wait for the peak.':e.W<.9*e.wx?'The predators were already past their peak (they were at '+Math.round(100*e.W/e.wx)+'% of it). Reset and press the button closer to the top.':I.t<e.t+9.9?'Keep running. Give it 10 years after the disease (now '+(I.t-e.t).toFixed(0)+').':'The prey did not rebound enough. Reset and strike nearer the predator peak.'}},
+ {t:'Full toolkit: use all three events (add predators, disease, harsh winter) in one run and keep going to at least year 60.',h:'Space the events out so you can see the effect of each one. Press Run, then press each event button at a different moment.',
+  ok:()=>{const k=new Set(I.evd.map(e=>e.k));return k.size===3&&I.t>=60},
+  chk:()=>{const k=new Set(I.evd.map(e=>e.k)),need=['add','virus','winter'].filter(x=>!k.has(x)).map(x=>({add:'Add predators',virus:'Disease',winter:'Harsh winter'}[x]));return need.length?'Still missing: '+need.join(', ')+'.':'All three used. Keep running to year 60 (now '+I.t.toFixed(0)+').'}}
+];
+const doneI=new Set(),imsg={};
+function renderIsleMis(){
+  g('imissions').innerHTML=IMIS.map((m,i)=>{const d=doneI.has(i);return `<li class="${d?'done':''}"><div>${m.t}<div class="mrow"><button class="btn mini" data-i="${i}">Check</button><details><summary>Hint</summary>${m.h}</details></div><div class="mres" data-k="${d?'ok':(imsg[i]?'no':'')}" aria-live="polite">${d?'Complete.':(imsg[i]||'')}</div></div></li>`}).join('');
+  g('iCount').textContent=doneI.size+' of '+IMIS.length;
+  $$('#imissions .btn.mini').forEach(b=>b.onclick=()=>checkIsleMis(+b.dataset.i))}
+function checkIsle(){let ch=false;IMIS.forEach((m,i)=>{let ok=false;try{ok=m.ok()}catch(e){}if(ok&&!doneI.has(i)){doneI.add(i);delete imsg[i];ch=true}});if(ch)renderIsleMis()}
+function checkIsleMis(i){let ok=false;try{ok=IMIS[i].ok()}catch(e){}
+  if(ok){doneI.add(i);delete imsg[i]}else{let m='';try{m=IMIS[i].chk()}catch(e){m='Press Run first.'}imsg[i]=m}renderIsleMis()}
+const IQ=[
+ ['Which line peaks first?','The prey line. Predators need prey to be abundant before they can increase, so the predator peak follows a few years later.'],
+ ['Why do predators fall after the prey fall?','They starve. Less food means lower birthrate and higher death rate for the predators, which is a density-dependent effect.'],
+ ['Moose also depend on balsam fir. What does that add?','A second limiting factor. When moose are abundant they overgraze fir and start to starve even before wolves catch up, so several factors act at once.'],
+ ['If Arctic foxes increase quickly, what happens to lemmings?','Lemmings fall under heavy predation, then the foxes decline from lack of food. The result is a cycle, not a one-way change.']
+];
+$('#isleQ').innerHTML=IQ.map((q,i)=>`<button data-i="${i}" aria-pressed="false">${q[0]}</button>`).join('');
+$$('#isleQ button').forEach(b=>b.onclick=()=>{$$('#isleQ button').forEach(x=>x.setAttribute('aria-pressed',x===b));$('#isleA').textContent=IQ[+b.dataset.i][1]});
+
+/* ---------- SORT BLITZ ---------- */
+const DECKS=[
+ {name:'Limiting factors',desc:'Density-dependent, density-independent, or both?',ch:[['dd','Density-dependent'],['di','Density-independent'],['both','Both']],cards:[
+  ['Wolves hunt moose on Isle Royale.','dd','Predation gets heavier when prey are abundant and easy to catch.'],
+  ['A canine virus sweeps through a large, dense wolf population.','dd','Crowded hosts spread disease faster.'],
+  ['A hurricane destroys most nesting sites of a seabird colony.','di','It hits the same whether the colony is large or small.'],
+  ['A severe drought dries up the Paraná de Manaquiri River in Brazil.','di','Fish of every population density are affected equally.'],
+  ['A wildfire kills most of a forest insect population.','di','Natural disasters strike regardless of how crowded the population was.'],
+  ['Moose overbrowse balsam fir until the trees run short.','dd','Herbivory is predation from the plant’s point of view and grows with moose density.'],
+  ['Grazing animals fight over territories used for raising young.','dd','Competition gets stronger as the area fills up.'],
+  ['Crowding causes fighting, stress, and in some species females killing their young.','dd','Stress from overcrowding lowers birthrate and raises death rate.'],
+  ['Parasites jump from host to host in a tightly packed herd.','dd','Close contact makes parasites spread more easily.'],
+  ['Heavy rain washes insects off the plants.','di','Rain washes away insects whether there are many or few.'],
+  ['A cold winter buries moose food in snow and many moose starve.','both','Weather is the density-independent trigger. Competition for scarce food is the density-dependent result. Fewer moose would have meant more survivors.'],
+  ['A chemical spill harms a population of any size.','di','Pollution can act like a density-independent factor.'],
+  ['Arctic foxes eat lemmings, the foxes’ main food source.','dd','Predator–prey relationships are density-dependent and create cycles.'],
+  ['A fish population falls after disease spreads through a crowded hatchery pond.','dd','Disease spreads faster at high density.']]},
+ {name:'r or K?',desc:'Match the species or clue to its life history strategy.',ch:[['r','r-strategist'],['K','K-strategist']],cards:[
+  ['A single bacterium that divides every 20 minutes.','r','Many offspring, fast reproduction, little or no care.'],
+  ['An elephant with one calf and years of parental care.','K','Few offspring with heavy care means slow growth.'],
+  ['A fish that lays 10,000 eggs and gives no care.','r','Thousands of offspring and no care is the r signature.'],
+  ['A deer with one fawn per doe each year and heavy maternal care.','K','K-strategists have few young and invest in each one.'],
+  ['Hydrilla spreading through Florida canals.','r','Plants and insects that reproduce rapidly are r-strategists.'],
+  ['Wolves on Isle Royale.','K','Slow reproduction, population tracks carrying capacity.'],
+  ['A population that booms and crashes with predator numbers.','r','Predators and parasites specialise on species with huge numbers of offspring.'],
+  ['A population regulated mainly by competition for food, territory and mates.','K','K-strategists sit near carrying capacity and compete for limited resources.'],
+  ['A population that recovers slowly after a crash.','K','Slow reproduction means slow recovery.'],
+  ['Rabbits released in Australia in 1859.','r','Few checks plus many offspring gave almost instant exponential growth.'],
+  ['Humans.','K','Few offspring, long parental care, slow reproduction.'],
+  ['A gypsy moth laying hundreds of eggs.','r','Insects with huge broods are r-strategists.']]},
+ {name:'J-curve or S-curve?',desc:'Read the situation and name the growth curve.',ch:[['J','J-curve (exponential)'],['S','S-curve (logistic)']],cards:[
+  ['24 rabbits released in Australia, first few years.','J','No natural checks, so the larger the population, the faster it grows.'],
+  ['Yeast in a jar of grape juice at hour 36, flat at the dashed line.','S','Growth stops at carrying capacity when the sugar runs low.'],
+  ['One bacterium becomes 8 cells in an hour, then 16, 32, 64…','J','Doubling over and over is exponential.'],
+  ['Hydrilla in U.S. waterways with no natural predators or competitors.','J','No sign of levelling off yet.'],
+  ['Hydrilla in its native Asia, held back by predators and competitors.','S','There it reached carrying capacity and stopped growing.'],
+  ['A few gypsy moths released near Boston spread across the Northeast.','J','Escaped moths grew with no natural checks.'],
+  ['Insects on a predator-free island speed up, then stabilise after several years.','S','Exponential start, then slowing to a stable size.'],
+  ['Growth rate drops to zero near carrying capacity.','S','Birthrate equals death rate, so the curve flattens.'],
+  ['“The larger it gets, the faster it grows.”','J','That is the definition of exponential growth.'],
+  ['Resources start running short, so the population still grows, but more slowly.','S','This is phase 2 of logistic growth.']]}
+];
+let SG=null;const DCOL=['dd','r','j'],CCOL={dd:'dd',di:'di',both:'both',r:'r',K:'K',J:'j',S:'s'};
+$('#sortStart').innerHTML=DECKS.map((d,i)=>`<button class="deck" data-i="${i}" style="--dc:var(--${DCOL[i]})"><b>${d.name}</b><span>${d.desc}</span><br>${d.ch.map(c=>`<i style="--ic:var(--${CCOL[c[0]]})">${c[1]}</i>`).join('')}</button>`).join('');
+$$('#sortStart .deck').forEach(b=>b.onclick=()=>startSort(+b.dataset.i));
+function startSort(i){SG={d:DECKS[i],cards:shuffle(DECKS[i].cards).slice(0,12),i:0,score:0,streak:0,best:0,miss:[],locked:false};$('#sortStart').hidden=true;$('#sortPlay').hidden=false;renderSort()}
+function renderSort(){
+  const p=$('#sortPlay');
+  if(SG.i>=SG.cards.length){
+    p.innerHTML=`<div class="card"><p class="kicker">Round complete</p><p class="q">${SG.score} points · best streak ${SG.best}</p>
+    ${SG.miss.length?`<p style="margin:0 0 4px;font-weight:600">Review these:</p><ul class="miss">${SG.miss.map(m=>`<li>${m[0]} <b>${SG.d.ch.find(c=>c[0]===m[1])[1]}.</b> ${m[2]}</li>`).join('')}</ul>`:'<p>Clean sweep. No misses.</p>'}
+    <div class="row" style="margin-top:16px"><button class="btn primary" id="again">Play again</button><button class="btn" id="menu">Choose another deck</button></div></div>`;
+    $('#again').onclick=()=>startSort(DECKS.indexOf(SG.d));$('#menu').onclick=()=>{$('#sortPlay').hidden=true;$('#sortStart').hidden=false};return}
+  const c=SG.cards[SG.i];SG.locked=false;
+  p.innerHTML=`<div class="card" style="--c:var(--${DCOL[DECKS.indexOf(SG.d)]})"><div class="meter"><span>Card ${SG.i+1} of ${SG.cards.length}</span><div class="bar"><i style="width:${SG.i/SG.cards.length*100}%"></i></div><span>Score ${SG.score}</span><span>Streak ${SG.streak}</span></div>
+  <p class="q">${c[0]}</p><div class="pick" id="opts">${SG.d.ch.map(x=>`<button class="btn k-${x[0]}" data-k="${x[0]}">${x[1]}</button>`).join('')}</div><div id="fbk"></div></div>`;
+  $$('#opts button').forEach(b=>b.onclick=()=>answerSort(b.dataset.k));
+}
+function answerSort(k){
+  if(SG.locked)return;SG.locked=true;const c=SG.cards[SG.i],ok=k===c[1];
+  if(ok){SG.streak++;SG.best=Math.max(SG.best,SG.streak);SG.score+=10+Math.min(SG.streak-1,5)*2}else{SG.streak=0;SG.miss.push(c)}
+  $$('#opts button').forEach(b=>{b.disabled=true;if(b.dataset.k===c[1])b.style.outline='3px solid '+cssv('--good'),b.style.outlineOffset='2px'});
+  $('#fbk').innerHTML=`<div class="fb ${ok?'ok':'no'}"><b class="${ok?'ok':'no'}">${ok?'Correct.':'Not quite.'}</b> ${ok?'':'Answer: '+SG.d.ch.find(x=>x[0]===c[1])[1]+'. '}${c[2]}</div><div class="row" style="margin-top:12px"><button class="btn primary" id="nx">${SG.i+1>=SG.cards.length?'See results':'Next card'}</button></div>`;
+  $('#nx').onclick=()=>{SG.i++;renderSort()};$('#nx').focus();
+}
+
+/* ---------- MATH DASH ---------- */
+function makeQ(){
+  const t=rnd(0,5);
+  if(t===0){const a=pickOne([2,4,5,10,20,25]),d=rnd(2,40),n=a*d;return {q:`A biologist counts <b>${n}</b> rabbits on <b>${a} km²</b>. What is the population density (rabbits per km²)?`,a:d,s:`Density = individuals ÷ area = ${n} ÷ ${a} = ${d} per km².`}}
+  if(t===1){const k=rnd(3,8);return {q:`One bacterium divides every 20 minutes. How many cells are there after <b>${k*20} minutes</b>?`,a:Math.pow(2,k),s:`${k*20} minutes is ${k} doublings, so 2^${k} = ${Math.pow(2,k)} cells.`}}
+  if(t===2){const B=rnd(40,200),D=rnd(10,150),Im=rnd(0,40),E=rnd(0,40);return {q:`In one year a population has <b>${B}</b> births, <b>${D}</b> deaths, <b>${Im}</b> immigrants and <b>${E}</b> emigrants. What is the net change in population? (Use a minus sign if it shrank.)`,a:B+Im-D-E,s:`Added: ${B} + ${Im} = ${B+Im}. Removed: ${D} + ${E} = ${D+E}. Net = ${B+Im-D-E}.`}}
+  if(t===3){const N=pickOne([200,500,800,1000,2500,4000]),p=pickOne([2,5,10,20,25]);return {q:`A population of <b>${N}</b> grows <b>${p}%</b> in one year. How many individuals are added?`,a:N*p/100,s:`${p}% of ${N} = ${N} × ${p/100} = ${N*p/100}.`}}
+  if(t===4){const x=pickOne([2,3,5,6]),k=rnd(2,4),n=pickOne([10,25,50,100]);return {q:`A population of <b>${n}</b> doubles every <b>${x} years</b>. How big is it after <b>${x*k} years</b>?`,a:n*Math.pow(2,k),s:`${x*k} years is ${k} doubling times, so ${n} × 2^${k} = ${n*Math.pow(2,k)}.`}}
+  const a=pickOne([10,20,25,40]),d=rnd(2,9);return {q:`A park has <b>${d} deer per km²</b> and covers <b>${a} km²</b>. How many deer live there?`,a:a*d,s:`Individuals = density × area = ${d} × ${a} = ${a*d}.`}
+}
+let MD=null;
+function mathStart(){MD={qs:Array.from({length:8},makeQ),i:0,score:0};mathRender()}
+function mathRender(){
+  const b=$('#mathBox');
+  if(!MD){b.innerHTML=`<div class="card"><p class="q">Ready for a round?</p><button class="btn primary" id="mgo">Start</button></div>`;$('#mgo').onclick=mathStart;return}
+  if(MD.i>=MD.qs.length){b.innerHTML=`<div class="card"><p class="kicker">Round complete</p><p class="q">${MD.score} of ${MD.qs.length} correct</p><button class="btn primary" id="mgo">New round</button></div>`;$('#mgo').onclick=mathStart;return}
+  const q=MD.qs[MD.i];
+  b.innerHTML=`<div class="card" style="--c:var(--r)"><div class="meter"><span>Question ${MD.i+1} of ${MD.qs.length}</span><div class="bar"><i style="width:${MD.i/MD.qs.length*100}%"></i></div><span>Correct ${MD.score}</span></div>
+  <p class="q" style="font-weight:500">${q.q}</p><form id="mf" class="row" style="align-items:center"><label for="ans" style="position:absolute;left:-9999px">Your answer</label><input class="num" id="ans" type="number" step="any" inputmode="decimal" autocomplete="off"><button class="btn primary" type="submit">Check</button></form><div id="mfb"></div></div>`;
+  const inp=$('#ans');inp.focus();
+  $('#mf').onsubmit=e=>{e.preventDefault();if(inp.disabled||inp.value==='')return;const ok=Math.abs(+inp.value-q.a)<1e-9;if(ok)MD.score++;inp.disabled=true;
+    $('#mfb').innerHTML=`<div class="fb ${ok?'ok':'no'}"><b class="${ok?'ok':'no'}">${ok?'Correct.':'Not quite.'}</b> ${q.s}</div><div class="row" style="margin-top:12px"><button class="btn primary" id="mn">${MD.i+1>=MD.qs.length?'See results':'Next question'}</button></div>`;
+    $('#mn').onclick=()=>{MD.i++;mathRender()};$('#mn').focus()};
+}
+redraws.math=()=>{if(!MD)mathRender()};
+
+/* ---------- CASE FILE ---------- */
+function single(id){const bs=$$('#'+id+' button');bs.forEach(b=>b.onclick=()=>bs.forEach(x=>x.setAttribute('aria-pressed',x===b)))}
+single('c1a');single('c1b');
+$$('#c2 button').forEach(b=>b.onclick=()=>b.setAttribute('aria-pressed',b.getAttribute('aria-pressed')!=='true'));
+const sel=id=>$$('#'+id+' button').filter(b=>b.getAttribute('aria-pressed')==='true').map(b=>b.dataset.v);
+$('#c1check').onclick=()=>{const a=sel('c1a')[0],b=sel('c1b')[0],f=$('#c1fb');f.hidden=false;
+  if(!a||!b){f.className='fb no';f.innerHTML='Choose a curve and a reason first.';return}
+  const ok=a==='J'&&b==='a';f.className='fb '+(ok?'ok':'no');
+  f.innerHTML=ok?'<b class="ok">Clue 1 collected.</b> A J-curve: 24 rabbits became millions in under ten years. Rabbits are r-strategists, and none of their usual density-dependent checks were in place.':
+  '<b class="no">Not yet.</b> '+(a!=='J'?'An S-curve needs limits that slow growth, and early on Australia had almost none. ':'')+(b!=='a'?'Think about how many offspring rabbits have and what usually keeps them in check.':'')};
+$('#c2check').onclick=()=>{const s=sel('c2').sort().join(','),f=$('#c2fb');f.hidden=false;const ok=s==='dis,pred';f.className='fb '+(ok?'ok':'no');
+  f.innerHTML=ok?'<b class="ok">Clue 2 collected.</b> English rabbits faced predators and diseases, both density-dependent factors. Australian rabbits had neither, so they escaped carrying capacity for a while.':
+  '<b class="no">Not yet.</b> Look for density-dependent factors that existed for rabbits in England only. Food and space were not the difference, and hurricanes are not part of this story.'};
+
+/* ---------- boot ---------- */
+syncOut();applyPreset(0);resetIsle();renderIsleMis();mathRender();
+requestAnimationFrame(t=>{last=t;requestAnimationFrame(loop)});
+new ResizeObserver(redrawAll).observe(document.body);
+</script>
+</body></html>
